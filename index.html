@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP requestState Token Designer</title>
+<meta name="description" content="Design the binding set inside an MCP requestState token, mint it with real WebCrypto HMAC-SHA-256 in the browser, and read the residual table: what each binding prevents and the one attack none of them stop.">
+<link rel="canonical" href="https://0xelitesystem.github.io/mcp-state-token-designer/">
+<meta property="og:title" content="MCP requestState Token Designer">
+<meta property="og:description" content="Design the binding set inside an MCP requestState token, mint it with real WebCrypto HMAC-SHA-256 in the browser, and read the residual table: what each binding prevents and the one attack none of them stop.">
+<meta property="og:url" content="https://0xelitesystem.github.io/mcp-state-token-designer/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MCP requestState Token Designer","applicationCategory":"DeveloperApplication","operatingSystem":"Any (browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://0xelitesystem.github.io/mcp-state-token-designer/","author":{"@type":"Person","name":"0xelitesystem","url":"https://elitesystem.ai"}}</script>
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#0a0a0a; --bg-deep:#050505; --surface:#111110; --surface-2:#161614;
+  --ink:#e8e8e3; --ink-soft:#a8a8a3; --muted:#6e6e68; --rule:#1f1f1d;
+  --rule-2:#2a2a27; --accent:#d4ff3a; --accent-2:#ffb454; --on-accent:#0a0a0a;
+  --code-bg:#111110; --ok:#7ddc7d; --warn:#ffb454; --err:#ff6450; --info:#6fd3e0;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    color-scheme: light;
+    --bg:#e8ebef; --bg-deep:#f4f5f8; --surface:#dee2e8; --surface-2:#d3d7df;
+    --ink:#0a0a0a; --ink-soft:#2a2a27; --muted:#6e6e68; --rule:#c8cdd5;
+    --rule-2:#aab0ba; --accent:#2d6b00; --accent-2:#8a4d00; --on-accent:#ffffff;
+    --code-bg:#dee2e8; --ok:#1a5c2e; --warn:#8a4d00; --err:#a82d14; --info:#0f5c60;
+  }
+}
+:root[data-theme="light"]{
+  color-scheme: light;
+  --bg:#e8ebef; --bg-deep:#f4f5f8; --surface:#dee2e8; --surface-2:#d3d7df;
+  --ink:#0a0a0a; --ink-soft:#2a2a27; --muted:#6e6e68; --rule:#c8cdd5;
+  --rule-2:#aab0ba; --accent:#2d6b00; --accent-2:#8a4d00; --on-accent:#ffffff;
+  --code-bg:#dee2e8; --ok:#1a5c2e; --warn:#8a4d00; --err:#a82d14; --info:#0f5c60;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font:16px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 64px}
+header.top{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between;border-bottom:1px solid var(--rule);padding-bottom:14px;margin-bottom:22px}
+h1{font-size:22px;line-height:1.3;margin:0;letter-spacing:-0.01em}
+h2{font-size:17px;margin:34px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--rule);letter-spacing:0.02em}
+h3{font-size:15px;margin:22px 0 8px;color:var(--ink)}
+p{margin:0 0 12px}
+.lede{color:var(--ink-soft)}
+a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+a:hover{color:var(--ink)}
+button{
+  font:inherit;font-size:14px;cursor:pointer;
+  background:var(--surface-2); color:var(--ink);
+  border:1px solid var(--rule-2); border-radius:6px; padding:8px 14px;
+}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=text],input[type=number],textarea{
+  font:inherit;font-size:14px;width:100%;max-width:100%;
+  background:var(--bg-deep);color:var(--ink);
+  border:1px solid var(--rule-2);border-radius:6px;padding:8px 10px;
+}
+textarea{min-height:82px;resize:vertical}
+label.fl{display:block;font-size:13px;color:var(--ink-soft);margin:0 0 4px}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px;margin:14px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:640px){.grid2{grid-template-columns:1fr}}
+.bindings{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.bindings{grid-template-columns:1fr}}
+.bind{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--surface-2);border:1px solid var(--rule-2);border-radius:8px;padding:10px 12px;
+}
+.bind input{margin-top:5px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+.bind .bt{font-size:14px;font-weight:700;display:block}
+.bind .bd{font-size:12.5px;color:var(--ink-soft);display:block;margin-top:2px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--rule)}
+thead th{color:var(--ink-soft);font-weight:400;font-size:12.5px;letter-spacing:0.04em;text-transform:uppercase;border-bottom:1px solid var(--rule-2)}
+tbody th{font-weight:400;color:var(--ink)}
+td.res{font-weight:700;white-space:nowrap}
+.prev{color:var(--ok)}
+.notprev{color:var(--err)}
+tr.trap th,tr.trap td{background:var(--surface-2)}
+code,pre{font-family:inherit}
+pre{
+  background:var(--code-bg);border:1px solid var(--rule-2);border-radius:8px;
+  padding:12px;margin:0;font-size:13px;color:var(--ink);
+  white-space:pre-wrap;word-break:break-all;overflow-wrap:anywhere;
+}
+ol.runs{list-style:none;margin:12px 0 0;padding:0;font-size:13.5px}
+ol.runs li{padding:6px 0;border-bottom:1px solid var(--rule)}
+ol.runs li:last-child{border-bottom:0}
+.pass{color:var(--ok);font-weight:700}
+.rej{color:var(--err);font-weight:700}
+.why{color:var(--ink-soft)}
+blockquote{
+  margin:0 0 14px;padding:12px 14px;background:var(--surface-2);
+  border-left:3px solid var(--accent);border-radius:0 8px 8px 0;
+  font-size:14px;color:var(--ink);
+}
+blockquote.trapq{border-left-color:var(--warn)}
+.cite{font-size:12.5px;color:var(--ink-soft);margin:-6px 0 18px}
+.err{color:var(--err);font-size:13.5px;margin-top:8px;min-height:1px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.note{font-size:13.5px;color:var(--ink-soft)}
+ul.plain{margin:0 0 12px;padding-left:20px}
+ul.plain li{margin-bottom:6px}
+footer{margin-top:44px;border-top:1px solid var(--rule);padding-top:16px;font-size:13px;color:var(--ink-soft)}
+footer a{margin-right:6px}
+.sep{color:var(--ink-soft);margin-right:6px}
+.kv{font-size:13px;color:var(--ink-soft);margin:10px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>MCP requestState Token Designer</h1>
+  <button id="theme" type="button">Theme</button>
+</header>
+
+<p class="lede"><strong>webhook-signature-verifier</strong> checks a signature somebody else produced, against a published vendor scheme. This tool does the opposite job. It <strong>designs</strong> the binding set that goes inside an MCP <code>requestState</code> token, mints one with real WebCrypto HMAC-SHA-256 in front of you, and computes what each binding does and does not prevent. Its entire point is a case where every signature check is correct and a correct signature is still not the answer.</p>
+
+<p class="lede">This is a faithful reading of normative text made executable, not a discovery. The Multi Round-Trip Requests page of the Model Context Protocol specification, version 2026-07-28, states the trap itself, in one sentence, inside a warning callout. Everybody will skim it. So here it is running: press <strong>Replay 5 times</strong> and read five PASS results.</p>
+
+<h2>Bindings</h2>
+<p class="note">Each binding is independent. Turn one off and the residual table below changes on the spot, so the page teaches which binding stops which attack instead of handing you a fixed recipe.</p>
+
+<div class="panel">
+  <div class="bindings">
+    <label class="bind"><input type="checkbox" id="b_int" checked>
+      <span><span class="bt">HMAC integrity</span><span class="bd">Sign the payload with the session key and reject anything that does not verify. Off means the blob travels unauthenticated.</span></span></label>
+    <label class="bind"><input type="checkbox" id="b_sub" checked>
+      <span><span class="bt">Authenticated principal</span><span class="bd">Embed <code>sub</code> and reject state presented by a different principal.</span></span></label>
+    <label class="bind"><input type="checkbox" id="b_exp" checked>
+      <span><span class="bt">Short expiry (TTL)</span><span class="bd">Embed <code>exp</code> and reject state presented after it lapses.</span></span></label>
+    <label class="bind"><input type="checkbox" id="b_rd" checked>
+      <span><span class="bt">Request digest</span><span class="bd">Embed <code>rd</code>, a SHA-256 over the method name, a null byte, and canonical JSON params. Rejects state presented on a request that does not match.</span></span></label>
+  </div>
+  <label class="bind" style="margin-top:10px">
+    <input type="checkbox" id="b_ledger">
+    <span><span class="bt">Server-side consumption ledger (not a binding)</span><span class="bd">The invariant the specification says you MUST enforce server-side when a given state must be consumed at most once. Adds a random <code>jti</code> and a consumed-set the server keeps. Nothing you can put inside the token does this job.</span></span>
+  </label>
+</div>
+
+<h2>The request being bound</h2>
+<div class="panel">
+  <div class="grid2">
+    <div>
+      <label class="fl" for="f_sub">Authenticated principal</label>
+      <input type="text" id="f_sub" value="user:alice">
+    </div>
+    <div>
+      <label class="fl" for="f_method">Method</label>
+      <input type="text" id="f_method" value="tools/call">
+    </div>
+  </div>
+  <div style="margin-top:12px">
+    <label class="fl" for="f_params">Params (JSON object)</label>
+    <textarea id="f_params" spellcheck="false">{"name":"redeem_coupon","arguments":{"code":"SAVE50"}}</textarea>
+  </div>
+  <div class="grid2" style="margin-top:12px">
+    <div>
+      <label class="fl" for="f_ttl">TTL (seconds)</label>
+      <input type="number" id="f_ttl" value="300" min="1" max="86400" step="1">
+    </div>
+    <div>
+      <label class="fl" for="f_attacker">Attacker principal, used by the cross-user row</label>
+      <input type="text" id="f_attacker" value="user:mallory">
+    </div>
+  </div>
+  <div class="row">
+    <button type="button" class="primary" id="mint">Mint token</button>
+    <button type="button" id="newkey">New session key</button>
+  </div>
+  <p class="err" id="err" role="alert"></p>
+</div>
+
+<h2>Residual table</h2>
+<p class="note">This is the primary output. Every row is computed live, by minting and verifying real tokens with the current binding set, not looked up in a table of stored answers.</p>
+<div class="panel">
+  <div class="scroll" tabindex="0" role="region" aria-label="Residual table">
+    <table>
+      <thead><tr><th scope="col">Attack</th><th scope="col">Result</th><th scope="col">Stopped by</th></tr></thead>
+      <tbody id="residual"></tbody>
+    </table>
+  </div>
+  <p class="kv" id="resnote"></p>
+</div>
+
+<h2>Replay the identical token</h2>
+<p class="note">Same principal, same method, same params, inside the TTL. The token is not modified in any way. Every check the token can perform is performed, and every one of them is correct.</p>
+<div class="panel">
+  <div class="row" style="margin-top:0">
+    <button type="button" class="primary" id="replay">Replay 5 times</button>
+    <button type="button" id="clearledger">Clear server ledger</button>
+  </div>
+  <ol class="runs" id="runs"></ol>
+</div>
+
+<h2>The token</h2>
+<div class="panel">
+  <h3>Minted value</h3>
+  <pre id="tokout">-</pre>
+  <h3>Decoded payload</h3>
+  <p class="note">Shown here because you are the server. A client MUST NOT do this: the specification says the value is opaque to clients.</p>
+  <pre id="payout">-</pre>
+  <h3>Request digest input</h3>
+  <pre id="digout">-</pre>
+</div>
+
+<h2>What the specification actually says</h2>
+
+<p>Quoted verbatim from the Multi Round-Trip Requests page of the Model Context Protocol specification, version 2026-07-28.</p>
+
+<h3>The state is opaque, and hostile</h3>
+<blockquote>An opaque string meaningful only to the server. Clients MUST NOT inspect, parse, modify, or make any assumptions about its contents.</blockquote>
+<blockquote>If a client request contains a <code>requestState</code> field, servers MUST treat <code>requestState</code> as an attacker-controlled input. If <code>requestState</code> influences authorization, resource access, or business logic, servers MUST protect its integrity (e.g. HMAC or AEAD) and MUST reject state that fails verification. Integrity protection MAY be omitted only when tampering can cause nothing worse than request failure.</blockquote>
+
+<h3>The three replay bindings</h3>
+<blockquote>To prevent replay, servers SHOULD include the following inside the integrity-protected <code>requestState</code> payload and verify each on receipt:
+<ul class="plain">
+<li>the authenticated principal, rejecting state presented by a different principal.</li>
+<li>a short expiry (TTL), rejecting state presented after it lapses;</li>
+<li>an identifier for the originating request, e.g. the method name and a digest of its salient parameters, rejecting state presented on a request that does not match.</li>
+</ul></blockquote>
+<p class="cite">Three bindings are listed under that SHOULD. Integrity protection is a separate MUST, in the paragraph above it. The four checkboxes at the top of this page are those three plus integrity.</p>
+
+<h3>The trap, in the specification's own words</h3>
+<blockquote class="trapq">Note that these measures bound the replay window and prevent cross-user and cross-request reuse, but do not by themselves guarantee single-use. Servers for which a given <code>requestState</code> must be consumed at most once (e.g., one-time redemptions) MUST enforce that invariant server-side.</blockquote>
+<p class="cite">On the published page that paragraph sits in a callout marked as a warning, attached to the third bullet above.</p>
+
+<h3>Why the state passes through hostile hands at all</h3>
+<blockquote>Because <code>requestState</code> passes through the client, malicious or compromised clients could attempt to modify it to alter server behavior, bypass authorization checks, or corrupt server logic. Servers MUST validate request state as described in the server requirements above.</blockquote>
+<p class="cite">Source: <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr">modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr</a></p>
+
+<h2>The AEAD variant</h2>
+<p>The specification permits either construction: servers MUST protect the integrity of the state, <q>e.g. HMAC or AEAD</q>. This page implements the HMAC one, because HMAC-SHA-256 is what WebCrypto hands you with no key-agreement ceremony, and because the payload stays legible in the panel above, which is the entire point of a teaching tool.</p>
+<p>An AEAD build, for example AES-GCM, differs in exactly two ways that matter here. First, the payload is encrypted, so the principal, the expiry and the digest stop being readable by anyone holding the token, which is worth having when the state carries internal identifiers. Second, the same bindings still have to be inside the plaintext and still have to be checked on receipt, and not one row of the residual table changes. Confidentiality is not single-use. The specification's own example writes the field as a placeholder reading <code>"AEAD-protected blob"</code>.</p>
+<p>The encoding is explicitly your business: <q>Servers are free to encode the state in any format (e.g. base64-encoded JSON, encrypted JWT, serialized binary).</q></p>
+
+<h2>Notes on the construction</h2>
+<ul class="plain">
+<li><strong>Digest input.</strong> SHA-256 over the method name, one null byte, then canonical JSON of the params. Canonical here means object keys sorted recursively, so a client that reorders its JSON does not look like a different request. The null byte keeps the method name from running into the params: with no separator, two different splits of method and body can produce the same bytes.</li>
+<li><strong>Key handling.</strong> The session key is 32 bytes from <code>crypto.getRandomValues</code>, imported non-extractable through <code>crypto.subtle.importKey</code>. It is never written to storage, never sent anywhere, and dies with the tab. Press <em>New session key</em> and every token minted before that moment stops verifying.</li>
+<li><strong>Encoding.</strong> base64url with no padding, the shape most people reach for when they encode state by hand.</li>
+<li><strong>What the ledger models.</strong> A real server records the <code>jti</code> and holds it until <code>exp</code>, so the set stays bounded. The demonstration keys on the <code>jti</code> when there is one, which is the same idea with the housekeeping left out.</li>
+<li><strong>Where this lands in practice.</strong> A retry that only needs the elicited value back is safe to replay. A retry that redeems a coupon, moves money, provisions a resource, or burns a quota is not, and no binding in the token can tell those two apart for you.</li>
+<li><strong>Independent and unaffiliated.</strong> This tool is not associated with, endorsed by, or connected to the Model Context Protocol project or its maintainers. It reads the published specification and implements it.</li>
+</ul>
+
+<footer>
+  <a href="https://elitesystem.ai">elitesystem.ai</a><span class="sep">|</span>
+  <a href="https://github.com/0xelitesystem/mcp-state-token-designer">source</a><span class="sep">|</span>
+  <a href="https://0xelitesystem.github.io/">catalog</a>
+</footer>
+
+</div>
+<script>
+(function(){
+  "use strict";
+
+  var root = document.documentElement;
+  try{
+    var saved = localStorage.getItem("mstd-theme");
+    if(saved === "light" || saved === "dark") root.setAttribute("data-theme", saved);
+  }catch(e){}
+
+  var enc = new TextEncoder();
+
+  function b64u(buf){
+    var bytes = new Uint8Array(buf), s = "";
+    for(var i=0;i<bytes.length;i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  }
+  function unb64u(str){
+    var s = str.replace(/-/g,"+").replace(/_/g,"/");
+    while(s.length % 4) s += "=";
+    var bin = atob(s), out = new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function b64uText(str){
+    var bytes = unb64u(str);
+    return new TextDecoder().decode(bytes);
+  }
+  function canonical(v){
+    if(v === null || typeof v !== "object") return JSON.stringify(v);
+    if(Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
+    var keys = Object.keys(v).sort();
+    return "{" + keys.map(function(k){ return JSON.stringify(k) + ":" + canonical(v[k]); }).join(",") + "}";
+  }
+  function now(){ return Math.floor(Date.now()/1000); }
+  function esc(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  var key = null;
+  async function newKey(){
+    var bytes = crypto.getRandomValues(new Uint8Array(32));
+    key = await crypto.subtle.importKey("raw", bytes, {name:"HMAC", hash:"SHA-256"}, false, ["sign","verify"]);
+    bytes.fill(0);
+  }
+
+  async function digestOf(method, params){
+    var input = method + "\u0000" + canonical(params);
+    var h = await crypto.subtle.digest("SHA-256", enc.encode(input));
+    return { digest: b64u(h), input: input };
+  }
+
+  async function build(cfg, ctx, expAt){
+    var payload = {};
+    if(cfg.sub)    payload.sub = ctx.principal;
+    if(cfg.exp)    payload.exp = expAt;
+    if(cfg.rd)     payload.rd  = (await digestOf(ctx.method, ctx.params)).digest;
+    if(cfg.ledger) payload.jti = b64u(crypto.getRandomValues(new Uint8Array(12)));
+    payload.next = "awaiting_github_login";
+    var body = b64u(enc.encode(JSON.stringify(payload)));
+    if(!cfg.integrity) return body;
+    var sig = b64u(await crypto.subtle.sign("HMAC", key, enc.encode(body)));
+    return body + "." + sig;
+  }
+
+  async function verify(token, cfg, ctx, ledger){
+    var dot = token.indexOf("."), body;
+    if(cfg.integrity){
+      if(dot < 0) return { pass:false, why:"integrity: no signature present" };
+      body = token.slice(0, dot);
+      var ok;
+      try{ ok = await crypto.subtle.verify("HMAC", key, unb64u(token.slice(dot+1)), enc.encode(body)); }
+      catch(e){ return { pass:false, why:"integrity: signature is not decodable" }; }
+      if(!ok) return { pass:false, why:"integrity: signature does not verify" };
+    }else{
+      body = dot < 0 ? token : token.slice(0, dot);
+    }
+    var p;
+    try{ p = JSON.parse(b64uText(body)); }
+    catch(e){ return { pass:false, why:"payload is not decodable" }; }
+
+    if(cfg.sub && p.sub !== ctx.principal)
+      return { pass:false, why:"principal: token is bound to " + String(p.sub) };
+    if(cfg.exp && !(typeof p.exp === "number" && p.exp > now()))
+      return { pass:false, why:"TTL: expired" };
+    if(cfg.rd){
+      var d = (await digestOf(ctx.method, ctx.params)).digest;
+      if(p.rd !== d) return { pass:false, why:"request digest: does not match this method and these params" };
+    }
+    if(ledger){
+      var id = p.jti || token;
+      if(ledger.has(id)) return { pass:false, why:"server ledger: already consumed" };
+      ledger.add(id);
+    }
+    var checked = [];
+    if(cfg.integrity) checked.push("integrity");
+    if(cfg.sub) checked.push("principal");
+    if(cfg.exp) checked.push("TTL");
+    if(cfg.rd) checked.push("digest");
+    return { pass:true, why: checked.length ? checked.join(" + ") + " verified" : "no bindings left to check" };
+  }
+
+  function el(id){ return document.getElementById(id); }
+  var serverLedger = new Set();
+  var current = null;
+
+  function readCfg(){
+    return {
+      integrity: el("b_int").checked,
+      sub:       el("b_sub").checked,
+      exp:       el("b_exp").checked,
+      rd:        el("b_rd").checked,
+      ledger:    el("b_ledger").checked
+    };
+  }
+
+  function readCtx(){
+    var raw = el("f_params").value.trim();
+    if(raw === "") throw new Error("Params is empty. Enter a JSON object, for example {}");
+    var params;
+    try{ params = JSON.parse(raw); }
+    catch(e){ throw new Error("Params is not valid JSON: " + e.message); }
+    if(params === null || typeof params !== "object" || Array.isArray(params))
+      throw new Error("Params must be a JSON object, not an array or a bare value.");
+    var principal = el("f_sub").value.trim();
+    if(principal === "") throw new Error("Authenticated principal is empty.");
+    var method = el("f_method").value.trim();
+    if(method === "") throw new Error("Method is empty.");
+    var ttl = parseInt(el("f_ttl").value, 10);
+    if(!isFinite(ttl) || ttl < 1) throw new Error("TTL must be a whole number of seconds, 1 or more.");
+    var attacker = el("f_attacker").value.trim();
+    if(attacker === "") throw new Error("Attacker principal is empty.");
+    if(attacker === principal) throw new Error("The attacker principal must differ from the authenticated principal, or the cross-user row means nothing.");
+    return { principal:principal, method:method, params:params, ttl:ttl, attacker:attacker };
+  }
+
+  function otherParams(params){
+    var clone = JSON.parse(JSON.stringify(params));
+    var keys = Object.keys(clone);
+    if(keys.length === 0){ clone.altered = true; return clone; }
+    var k = keys[0], v = clone[k];
+    if(typeof v === "string") clone[k] = v + "-altered";
+    else if(typeof v === "number") clone[k] = v + 1;
+    else if(typeof v === "boolean") clone[k] = !v;
+    else clone[k] = "altered";
+    return clone;
+  }
+
+  function tamper(token, attacker){
+    var dot = token.indexOf(".");
+    var body = dot < 0 ? token : token.slice(0, dot);
+    var p;
+    try{ p = JSON.parse(b64uText(body)); }catch(e){ return token; }
+    p.sub = attacker;
+    var newBody = b64u(enc.encode(JSON.stringify(p)));
+    return dot < 0 ? newBody : newBody + "." + token.slice(dot+1);
+  }
+
+  var ROWS = [
+    { id:"crossuser",   label:"cross-user, the same token presented by a different principal", by:"authenticated principal" },
+    { id:"crossreq",    label:"cross-request, same method, different params",                  by:"request digest" },
+    { id:"crossmethod", label:"cross-method, same params, different method",                   by:"request digest" },
+    { id:"tampered",    label:"tampered body, principal rewritten, signature kept",            by:"HMAC integrity" },
+    { id:"expired",     label:"expired replay, presented after the TTL lapses",                by:"short expiry (TTL)" },
+    { id:"same",        label:"same principal, same request, inside the TTL",                  by:"nothing in the token" }
+  ];
+
+  async function computeResidual(cfg, ctx, token){
+    var res = {};
+    res.crossuser = await verify(token, cfg, {principal:ctx.attacker, method:ctx.method, params:ctx.params}, null);
+    res.crossreq  = await verify(token, cfg, {principal:ctx.principal, method:ctx.method, params:otherParams(ctx.params)}, null);
+    var altMethod = ctx.method === "resources/read" ? "tools/call" : "resources/read";
+    res.crossmethod = await verify(token, cfg, {principal:ctx.principal, method:altMethod, params:ctx.params}, null);
+    res.tampered  = await verify(tamper(token, ctx.attacker), cfg, {principal:ctx.attacker, method:ctx.method, params:ctx.params}, null);
+
+    var expiredToken = await build(cfg, ctx, now() - 1);
+    res.expired = await verify(expiredToken, cfg, ctx, null);
+
+    var clone = cfg.ledger ? new Set() : null;
+    await verify(token, cfg, ctx, clone);
+    res.same = await verify(token, cfg, ctx, clone);
+    return res;
+  }
+
+  function renderResidual(res, cfg){
+    var html = "";
+    for(var i=0;i<ROWS.length;i++){
+      var r = ROWS[i], v = res[r.id], prevented = !v.pass, by;
+      if(r.id === "same"){
+        by = cfg.ledger ? "server-side consumption ledger, not the token" : "nothing in the token";
+      }else{
+        by = prevented ? r.by : "not bound";
+      }
+      html += '<tr' + (r.id === "same" ? ' class="trap"' : '') + '>' +
+        '<th scope="row">' + esc(r.label) + '</th>' +
+        '<td class="res ' + (prevented ? "prev" : "notprev") + '">' + (prevented ? "PREVENTED" : "NOT PREVENTED") + '</td>' +
+        '<td class="why">' + esc(by) + '</td></tr>';
+    }
+    el("residual").innerHTML = html;
+    var on = [];
+    if(cfg.integrity) on.push("integrity");
+    if(cfg.sub) on.push("principal");
+    if(cfg.exp) on.push("TTL");
+    if(cfg.rd) on.push("digest");
+    el("resnote").textContent = "Bindings on: " + (on.length ? on.join(", ") : "none") +
+      ". Server ledger: " + (cfg.ledger ? "on" : "off") +
+      ". Every row was computed by minting and verifying real tokens just now.";
+  }
+
+  async function refresh(){
+    el("err").textContent = "";
+    var cfg, ctx;
+    try{ cfg = readCfg(); ctx = readCtx(); }
+    catch(e){ el("err").textContent = e.message; return; }
+    try{
+      var token = await build(cfg, ctx, now() + ctx.ttl);
+      current = { cfg:cfg, ctx:ctx, token:token };
+      el("tokout").textContent = token;
+      var dot = token.indexOf(".");
+      var body = dot < 0 ? token : token.slice(0, dot);
+      el("payout").textContent = JSON.stringify(JSON.parse(b64uText(body)), null, 2) +
+        (dot < 0 ? "\n\n(no signature: HMAC integrity is off)" : "");
+      var d = await digestOf(ctx.method, ctx.params);
+      el("digout").textContent = cfg.rd
+        ? d.input.replace("\u0000", "\\0") + "\n\nSHA-256, base64url: " + d.digest
+        : "(the request digest binding is off, nothing is hashed)";
+      renderResidual(await computeResidual(cfg, ctx, token), cfg);
+      el("runs").innerHTML = "";
+      serverLedger = new Set();
+    }catch(e){
+      el("err").textContent = "Could not mint: " + (e && e.message ? e.message : String(e));
+    }
+  }
+
+  async function doReplay(){
+    if(!current) await refresh();
+    if(!current) return;
+    var cfg = current.cfg, ctx = current.ctx, token = current.token, out = "";
+    for(var i=1;i<=5;i++){
+      var r = await verify(token, cfg, ctx, cfg.ledger ? serverLedger : null);
+      out += '<li>attempt ' + i + ': <span class="' + (r.pass ? "pass" : "rej") + '">' +
+             (r.pass ? "PASS" : "REJECT") + '</span> <span class="why">(' + esc(r.why) + ')</span></li>';
+    }
+    el("runs").innerHTML = out;
+  }
+
+  el("theme").addEventListener("click", function(){
+    var cur = root.getAttribute("data-theme");
+    if(!cur){
+      var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+      cur = prefersLight ? "light" : "dark";
+    }
+    var next = cur === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try{ localStorage.setItem("mstd-theme", next); }catch(e){}
+  });
+
+  ["b_int","b_sub","b_exp","b_rd","b_ledger"].forEach(function(id){
+    el(id).addEventListener("change", refresh);
+  });
+  ["f_sub","f_method","f_params","f_ttl","f_attacker"].forEach(function(id){
+    el(id).addEventListener("input", refresh);
+  });
+  el("mint").addEventListener("click", refresh);
+  el("replay").addEventListener("click", doReplay);
+  el("clearledger").addEventListener("click", function(){
+    serverLedger = new Set();
+    el("runs").innerHTML = '<li class="why">Server ledger cleared.</li>';
+  });
+  el("newkey").addEventListener("click", async function(){
+    await newKey();
+    await refresh();
+    el("runs").innerHTML = '<li class="why">New session key. Every token minted before now stops verifying.</li>';
+  });
+
+  (async function init(){
+    if(!window.crypto || !window.crypto.subtle){
+      el("err").textContent = "This browser does not expose crypto.subtle, so nothing on this page can run.";
+      return;
+    }
+    await newKey();
+    await refresh();
+  })();
+})();
+</script>
+</body>
+</html>
