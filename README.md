@@ -79,4 +79,4 @@ This project is independent and unaffiliated. It is not associated with, endorse
 
 ## License
 
-MIT. Copyright (c) 2026 0xelitesystem.
+MIT. Copyright (c) 2026 RBL Industries LLC.
