@@ -75,7 +75,7 @@ This project is independent and unaffiliated. It is not associated with, endorse
 
 - https://github.com/0xelitesystem/multi-provider-webhook-verifier
 - https://github.com/0xelitesystem/mcp-server-privilege-inventory
-- https://github.com/0xelitesystem/jwt-inspector
+- https://github.com/0xelitesystem/jwt-verify-in-browser
 
 ## License
 
